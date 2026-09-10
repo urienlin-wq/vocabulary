@@ -5,16 +5,12 @@ workflows:
     environment:
       flutter: stable
     scripts:
-      - name: Generate missing platform files
+      - name: Generate Android project and restore our code
         script: |
-          if [ ! -d "android" ]; then
-            flutter create --platforms=android --project-name=word_memorizer .
-          fi
-      - name: Restore main.dart if overwritten
-        script: |
-          if grep -q "dot-shorthands|MyHomePage|counter" lib/main.dart 2>/dev/null; then
-            echo "main.dart was overwritten, this needs manual fix"
-          fi
+          # 1. 补齐缺失的 android 底层工程
+          flutter create --platforms=android --project-name=word_memorizer .
+          # 2. 强制还原 lib 目录和配置文件，把被篡改的 main.dart 彻底恢复成我们自己的代码
+          git checkout HEAD -- lib/ pubspec.yaml
       - name: Get Flutter packages
         script: flutter pub get
       - name: Build APK
