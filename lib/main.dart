@@ -566,7 +566,6 @@ class _ScanResultPageState extends State<ScanResultPage> {
       item.isSelected = false;
       item.checkResult = null;
     });
-
     if (item.isWord) {
       final result = await widget.dictionary.checkWord(newText);
 
@@ -577,6 +576,18 @@ class _ScanResultPageState extends State<ScanResultPage> {
         item.isSelected = result.isValid;
       });
     }
+  }
+
+  Future<void> _saveSelected() async {
+    final selectedItems = widget.items.where((item) {
+      return item.isSelected && !item.existsInBook;
+    }).toList();
+
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('请先勾选要添加的单词或短语'),
+        ),
       );
       return;
     }
@@ -612,6 +623,7 @@ class _ScanResultPageState extends State<ScanResultPage> {
       }
     }
   }
+    
 
   Color _statusColor(ScanItem item) {
     if (item.existsInBook) return Colors.grey;
