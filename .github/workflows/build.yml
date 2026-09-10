@@ -37,12 +37,15 @@ jobs:
           rm pubspec.yaml.bak
           rm -rf lib.bak
 
-      - name: Patch Kotlin version
+      - name: Patch versions
         run: |
-          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "2.1.0"/' android/settings.gradle
-          sed -i 's/id "com.android.application" version "[^"]*"/id "com.android.application" version "8.3.0"/' android/settings.gradle
-          sed -i 's#distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-8.6-all.zip#' android/gradle/wrapper/gradle-wrapper.properties
-
+          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "1.9.24"/' android/settings.gradle
+          sed -i 's/id "com.android.application" version "[^"]*"/id "com.android.application" version "8.1.4"/' android/settings.gradle
+          sed -i 's#distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-8.4-all.zip#' android/gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 34/' android/app/build.gradle
+          sed -i 's/targetSdkVersion flutter.targetSdkVersion/targetSdkVersion 34/' android/app/build.gradle
+          sed -i 's/minifyEnabled true/minifyEnabled false/' android/app/build.gradle
+          sed -i 's/shrinkResources true/shrinkResources false/' android/app/build.gradle
       - name: Install dependencies
         run: flutter pub get
 
