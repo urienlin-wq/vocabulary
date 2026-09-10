@@ -46,6 +46,18 @@ jobs:
           sed -i -E 's/targetSdk(Version)?[ =]+flutter.targetSdkVersion/targetSdk = 34/' android/app/build.gradle
           sed -i 's/minifyEnabled true/minifyEnabled false/' android/app/build.gradle
           sed -i 's/shrinkResources true/shrinkResources false/' android/app/build.gradle
+          echo "" >> android/build.gradle
+          echo "subprojects {" >> android/build.gradle
+          echo "    afterEvaluate { project ->" >> android/build.gradle
+          echo "        if (project.plugins.hasPlugin("com.android.application") || project.plugins.hasPlugin("com.android.library")) {" >> android/build.gradle
+          echo "            project.android {" >> android/build.gradle
+          echo "                compileSdkVersion 34" >> android/build.gradle
+          echo "                buildToolsVersion "34.0.0"" >> android/build.gradle
+          echo "            }" >> android/build.gradle
+          echo "        }" >> android/build.gradle
+          echo "    }" >> android/build.gradle
+          echo "}" >> android/build.gradle
+
       - name: Install dependencies
         run: flutter pub get
 
