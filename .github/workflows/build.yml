@@ -37,6 +37,10 @@ jobs:
           rm pubspec.yaml.bak
           rm -rf lib.bak
 
+      - name: Patch Kotlin version
+        run: |
+          sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "2.1.0"/' android/settings.gradle
+
       - name: Install dependencies
         run: flutter pub get
 
