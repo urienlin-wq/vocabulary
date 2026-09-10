@@ -21,6 +21,22 @@ jobs:
           flutter-version: '3.24.0'
           channel: 'stable'
 
+      - name: Backup existing files
+        run: |
+          cp pubspec.yaml pubspec.yaml.bak
+          cp -r lib lib.bak
+
+      - name: Generate missing platform files
+        run: flutter create --platforms=android --org com.example.vocabulary .
+
+      - name: Restore pubspec and lib
+        run: |
+          cp pubspec.yaml.bak pubspec.yaml
+          rm -rf lib
+          cp -r lib.bak lib
+          rm pubspec.yaml.bak
+          rm -rf lib.bak
+
       - name: Install dependencies
         run: flutter pub get
 
