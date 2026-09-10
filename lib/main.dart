@@ -763,3 +763,34 @@ class _ScanResultPageState extends State<ScanResultPage> {
               },
             ),
           ),
+                    SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _saving ? null : _saveSelected,
+                  icon: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(Icons.playlist_add),
+                  label: Text(
+                    _saving
+                        ? '正在保存……'
+                        : '添加已选的 $_selectedCount 个项目',
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
