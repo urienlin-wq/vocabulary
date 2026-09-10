@@ -99,8 +99,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _loading = true;
     });
-
-    try {
+        try {
       final candidates = await _ocr.recognizePageCandidates(
         File(pickedImage.path),
       );
@@ -154,10 +153,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// 逐个检查OCR得到的单词。
-  ///
-  /// 短语不强制整体查词典，因为许多常见搭配不一定能被普通单词词典返回；
-  /// 它们仍会展示，由用户自行选择是否保存。
   Future<void> _checkScannedWords(List<ScanItem> items) async {
     final wordItems = items.where((item) {
       return item.isWord && !item.existsInBook;
@@ -205,19 +200,20 @@ class _HomePageState extends State<HomePage> {
 
               if (text.isEmpty) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('请先输入英文单词或短语')),
+                  const SnackBar(
+                    content: Text('请先输入英文单词或短语'),
+                  ),
                 );
                 return;
               }
 
-                         setDialogState(() {
+              setDialogState(() {
                 checking = true;
                 checkResult = null;
               });
 
               final result = await _dictionary.checkWord(text);
-
-              if (!dialogContext.mounted) return;
+                            if (!dialogContext.mounted) return;
 
               setDialogState(() {
                 checking = false;
@@ -279,14 +275,14 @@ class _HomePageState extends State<HomePage> {
                     ),
                     if (statusText.isNotEmpty) ...[
                       const SizedBox(height: 10),
-                                            Align(
+                      Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           statusText,
                           style: TextStyle(
                             color: checkResult?.isValid == true
                                 ? Colors.green
-                                : Colors.orange.shade800,
+                                : Colors.orange,
                             fontSize: 13,
                           ),
                         ),
@@ -322,7 +318,9 @@ class _HomePageState extends State<HomePage> {
                   onPressed: () {
                     if (englishController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        const SnackBar(content: Text('英文单词或短语不能为空')),
+                        const SnackBar(
+                          content: Text('英文单词或短语不能为空'),
+                        ),
                       );
                       return;
                     }
@@ -337,8 +335,7 @@ class _HomePageState extends State<HomePage> {
         );
       },
     );
-
-    if (saved == true) {
+        if (saved == true) {
       final english = englishController.text.trim();
 
       final alreadyExists = await _db.wordExists(english);
@@ -392,7 +389,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Text('我的单词本 (${_words.length})'),
       ),
-            body: _loading
+      body: _loading
           ? const Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -415,7 +412,8 @@ class _HomePageState extends State<HomePage> {
                     final subtitleParts = <String>[
                       if (word.partOfSpeech.trim().isNotEmpty)
                         word.partOfSpeech.trim(),
-                      if (word.chinese.trim().isNotEmpty) word.chinese.trim(),
+                      if (word.chinese.trim().isNotEmpty)
+                        word.chinese.trim(),
                     ];
 
                     return ListTile(
@@ -431,7 +429,7 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                 ),
-      floatingActionButton: Row(
+            floatingActionButton: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           FloatingActionButton(
@@ -556,8 +554,7 @@ class _ScanResultPageState extends State<ScanResultPage> {
         );
       },
     );
-
-    controller.dispose();
+      controller.dispose();
 
     if (newText == null || newText.isEmpty) return;
 
@@ -566,6 +563,7 @@ class _ScanResultPageState extends State<ScanResultPage> {
       item.isSelected = false;
       item.checkResult = null;
     });
+
     if (item.isWord) {
       final result = await widget.dictionary.checkWord(newText);
 
@@ -623,7 +621,6 @@ class _ScanResultPageState extends State<ScanResultPage> {
       }
     }
   }
-    
 
   Color _statusColor(ScanItem item) {
     if (item.existsInBook) return Colors.grey;
@@ -678,7 +675,7 @@ class _ScanResultPageState extends State<ScanResultPage> {
           ),
         ],
       ),
-      body: Column(
+            body: Column(
         children: [
           Container(
             width: double.infinity,
@@ -749,14 +746,20 @@ class _ScanResultPageState extends State<ScanResultPage> {
                       if (item.hasSuggestion && !item.existsInBook)
                         TextButton(
                           onPressed: () => _applySuggestion(item),
-                          child: Text('采用建议：${item.suggestion}'),
+                          child: Text(
+                            '采用建议：${item.suggestion}',
+                          ),
                         ),
                     ],
                   ),
-                                    secondary: IconButton(
+                  secondary: IconButton(
                     tooltip: '编辑',
                     icon: const Icon(Icons.edit_outlined),
                     onPressed: item.existsInBook
                         ? null
                         : () => _editItem(item),
                   ),
+                );
+              },
+            ),
+          ),
