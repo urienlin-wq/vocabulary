@@ -2,6 +2,27 @@ import 'dart:io';
 
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
+enum ScanCandidateType {
+  word,
+  phrase,
+}
+
+class ScanCandidate {
+  final String text;
+  final ScanCandidateType type;
+
+  const ScanCandidate({
+    required this.text,
+    required this.type,
+  });
+
+  bool get isWord => type == ScanCandidateType.word;
+
+  bool get isPhrase => type == ScanCandidateType.phrase;
+
+  String get typeLabel => isWord ? '单词' : '短语';
+}
+
 class OCRService {
   final TextRecognizer _englishRecognizer =
       TextRecognizer(script: TextRecognitionScript.latin);
@@ -9,56 +30,99 @@ class OCRService {
   final TextRecognizer _chineseRecognizer =
       TextRecognizer(script: TextRecognitionScript.chinese);
 
-  /// 保留旧方法：供当前旧版 main.dart 使用。
+  /// 保留旧方法，避免当前的 main.dart 立刻失效。
   Future<String> recognizeEnglish(File imageFile) async {
     final inputImage = InputImage.fromFile(imageFile);
     final result = await _englishRecognizer.processImage(inputImage);
     return result.text;
   }
 
-  /// 保留中文识别能力，后续如果需要识别中文释义时可以使用。
+  /// 保留中文识别能力，后续如果要扫描中文释义可使用。
   Future<String> recognizeChinese(File imageFile) async {
     final inputImage = InputImage.fromFile(imageFile);
     final result = await _chineseRecognizer.processImage(inputImage);
     return result.text;
   }
 
-  /// 新方法：识别整页图片中的所有英文候选词。
+  /// 保留上一版的新方法：只返回整页中所有去重后的英文单词。
+  ///
+  /// 后续 main.dart 若只需要单词列表，仍然可以使用此方法。
+  Future<List<String>> recognizeEnglishWords(File imageFile) async {
+    final candidates = await recognizePageCandidates(imageFile);
+
+    return candidates
+        .where((candidate) => candidate.isWord)
+        .map((candidate) => candidate.text)
+        .toList();
+  }
+
+  /// 新方法：扫描整页，并同时返回“单词候选”和“短语候选”。
   ///
   /// 规则：
-  /// - 从OCR识别到的每个文本元素中提取英文单词。
-  /// - 自动移除数字、标点、乱码。
-  /// - 忽略只有一个字母的片段。
-  /// - 统一转为小写。
-  /// - 自动去重，保留在图片中第一次出现的顺序。
-  Future<List<String>> recognizeEnglishWords(File imageFile) async {
+  /// - 每行中的英文词都会作为单词候选。
+  /// - 一行包含2至6个英文词、且看起来不像完整句子时，
+  ///   会额外作为短语候选。
+  /// - 自动去掉数字、标点和乱码。
+  /// - 自动去重，保留页面中首次出现的顺序。
+  /// - 单词和短语分别去重；例如 look after 和 look、after 可以同时出现。
+  Future<List<ScanCandidate>> recognizePageCandidates(
+    File imageFile,
+  ) async {
     final inputImage = InputImage.fromFile(imageFile);
     final result = await _englishRecognizer.processImage(inputImage);
 
-    final words = <String>[];
-    final seen = <String>{};
+    final candidates = <ScanCandidate>[];
+    final seenWords = <String>{};
+    final seenPhrases = <String>{};
 
     for (final block in result.blocks) {
       for (final line in block.lines) {
-        for (final element in line.elements) {
-          final extractedWords = _extractEnglishWords(element.text);
+        final lineText = line.text.trim();
 
-          for (final word in extractedWords) {
-            if (seen.add(word)) {
-              words.add(word);
-            }
+        if (lineText.isEmpty) continue;
+
+        final words = _extractEnglishWords(lineText);
+
+        if (words.isEmpty) continue;
+
+        for (final word in words) {
+          if (seenWords.add(word)) {
+            candidates.add(
+              ScanCandidate(
+                text: word,
+                type: ScanCandidateType.word,
+              ),
+            );
+          }
+        }
+
+        if (_isPossiblePhrase(lineText, words)) {
+          final phrase = words.join(' ');
+
+          if (seenPhrases.add(phrase)) {
+            candidates.add(
+              ScanCandidate(
+                text: phrase,
+                type: ScanCandidateType.phrase,
+              ),
+            );
           }
         }
       }
     }
 
-    return words;
+    return candidates;
   }
 
-  /// 从一段OCR文字中提取可作为英文单词的内容。
+  /// 从OCR文字中抽取干净的英文词。
+  ///
+  /// 支持：
+  /// - don't
+  /// - it's
+  /// - mother-in-law
   List<String> _extractEnglishWords(String text) {
     final matches = RegExp(
-      r"[A-Za-z]+(?:['’-][A-Za-z]+)?",
+      r"[A-Za-z]+(?:['’-][A-Za-z]+)*",
     ).allMatches(text);
 
     final words = <String>[];
@@ -74,14 +138,54 @@ class OCRService {
     return words;
   }
 
-  /// 过滤掉明显不像要背的英文词的OCR碎片。
   bool _isPossibleWord(String word) {
-    if (word.length < 2) return false;
-
     final lettersOnly = word.replaceAll(RegExp(r"['’-]"), '');
 
     if (lettersOnly.length < 2) return false;
     if (lettersOnly.length > 40) return false;
+
+    return true;
+  }
+
+  /// 判断OCR的一行文字是否更像短语，而不是完整英文句子。
+  bool _isPossiblePhrase(String originalLine, List<String> words) {
+    if (words.length < 2 || words.length > 6) {
+      return false;
+    }
+
+    if (RegExp(r'[.!?。！？]').hasMatch(originalLine)) {
+      return false;
+    }
+
+    if (RegExp(r'd').hasMatch(originalLine)) {
+      return false;
+    }
+
+    final lowerLine = originalLine.trim().toLowerCase();
+
+    const sentenceStarters = {
+      'i',
+      'you',
+      'we',
+      'they',
+      'he',
+      'she',
+      'it',
+      'this',
+      'that',
+      'these',
+      'those',
+      'there',
+      'here',
+    };
+
+    if (sentenceStarters.contains(words.first)) {
+      return false;
+    }
+
+    if (lowerLine.endsWith(':')) {
+      return false;
+    }
 
     return true;
   }
