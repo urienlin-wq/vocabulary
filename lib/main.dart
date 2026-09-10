@@ -753,7 +753,10 @@ class _ScanResultPageState extends State<ScanResultPage> {
                         ),
                     ],
                   ),
-                  secondary: IconButton(
+                                    secondary: IconButton(
                     tooltip: '编辑',
                     icon: const Icon(Icons.edit_outlined),
-     
+                    onPressed: item.existsInBook
+                        ? null
+                        : () => _editItem(item),
+                  ),
