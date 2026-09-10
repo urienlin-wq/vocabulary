@@ -22,8 +22,13 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.0"
+          flutter-version: "3.22.3"
           channel: stable
+
+      - name: Install Android SDK 34
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
       - name: Generate Android project
         run: |
@@ -33,6 +38,13 @@ jobs:
           cp /tmp/pubspec.yaml pubspec.yaml
           rm -rf lib
           cp -r /tmp/lib lib
+
+      - name: Set Android SDK version
+        run: |
+          sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 34/' android/app/build.gradle
+          sed -i 's/targetSdkVersion flutter.targetSdkVersion/targetSdkVersion 34/' android/app/build.gradle
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/' android/app/build.gradle
+          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/' android/app/build.gradle
 
       - name: Install dependencies
         run: flutter pub get
