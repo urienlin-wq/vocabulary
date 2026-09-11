@@ -11,7 +11,7 @@ abstract final class VocabularyDatabaseMigrator {
     await db.execute(VocabularyDatabaseSchema.createActiveEntriesIndex);
     await db.execute(VocabularyDatabaseSchema.createEnglishSearchIndex);
     await _seedDefaultLibraries(db);
-    await _migrateLegacyWords(db);
+    await syncLegacyWords(db);
   }
 
   static Future<void> _seedDefaultLibraries(Database db) async {
@@ -26,7 +26,7 @@ abstract final class VocabularyDatabaseMigrator {
     await batch.commit(noResult: true);
   }
 
-  static Future<void> _migrateLegacyWords(Database db) async {
+  static Future<void> syncLegacyWords(Database db) async {
     final existing = await db.query(
       'sqlite_master',
       columns: ['name'],
@@ -42,8 +42,9 @@ abstract final class VocabularyDatabaseMigrator {
       final legacyId = word['id'];
       final english = (word['english']?.toString() ?? '').trim();
       if (legacyId == null || english.isEmpty) continue;
-      final createdAt = word['createdAt']?.toString() ??
-          DateTime.now().toIso8601String();
+
+      final createdAt =
+          word['createdAt']?.toString() ?? DateTime.now().toIso8601String();
       batch.insert(
         VocabularyDatabaseSchema.entriesTable,
         {
