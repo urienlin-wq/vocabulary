@@ -3,57 +3,71 @@ import 'dart:math';
 import '../models/vocabulary_entry.dart';
 import '../models/word_review_state.dart';
 
-enum ReviewDirection { englishToChinese, chineseToEnglish }
+enum ReviewMode { englishToChinese, chineseToEnglishHints }
 
 class ReviewQuestion {
   const ReviewQuestion({
     required this.entry,
-    required this.direction,
+    required this.mode,
   });
 
   final VocabularyEntry entry;
-  final ReviewDirection direction;
+  final ReviewMode mode;
 
-  String get prompt => direction == ReviewDirection.englishToChinese
+  String get prompt => mode == ReviewMode.englishToChinese
       ? entry.english
       : entry.chinese;
 
-  String get expectedAnswer => direction == ReviewDirection.englishToChinese
+  String get answer => mode == ReviewMode.englishToChinese
       ? entry.chinese
       : entry.english;
+
+  bool get supportsHints => mode == ReviewMode.chineseToEnglishHints;
 }
 
-class ReviewAnswerResult {
-  const ReviewAnswerResult({
-    required this.isCorrect,
-    required this.wasMarkedUnfamiliar,
+class ReviewRevealState {
+  const ReviewRevealState({
+    required this.question,
+    this.revealedCharacters = 0,
+    this.isAnswerVisible = false,
   });
 
-  final bool isCorrect;
-  final bool wasMarkedUnfamiliar;
-}
+  final ReviewQuestion question;
+  final int revealedCharacters;
+  final bool isAnswerVisible;
 
-class ReviewSessionSummary {
-  const ReviewSessionSummary({
-    required this.total,
-    required this.correct,
-    required this.incorrect,
-    required this.unfamiliar,
-  });
+  String get visibleAnswer {
+    if (isAnswerVisible) return question.answer;
+    if (!question.supportsHints) return '';
+    final length = revealedCharacters.clamp(0, question.answer.length);
+    return question.answer.substring(0, length);
+  }
 
-  final int total;
-  final int correct;
-  final int incorrect;
-  final int unfamiliar;
+  bool get canRevealHint =>
+      question.supportsHints && !isAnswerVisible && revealedCharacters < question.answer.length;
 
-  double get accuracy => total == 0 ? 0 : correct / total;
+  ReviewRevealState revealHint() {
+    if (!canRevealHint) return this;
+    return ReviewRevealState(
+      question: question,
+      revealedCharacters: revealedCharacters + 1,
+    );
+  }
+
+  ReviewRevealState revealAnswer() {
+    return ReviewRevealState(
+      question: question,
+      revealedCharacters: question.answer.length,
+      isAnswerVisible: true,
+    );
+  }
 }
 
 abstract final class VocabularyReviewEngine {
   static ReviewQuestion? nextQuestion({
     required List<VocabularyEntry> entries,
     required Map<String, WordReviewState> states,
-    required ReviewDirection direction,
+    required ReviewMode mode,
     Random? random,
   }) {
     if (entries.isEmpty) return null;
@@ -69,51 +83,10 @@ abstract final class VocabularyReviewEngine {
             ? favorites
             : entries;
     final entry = candidates[(random ?? Random()).nextInt(candidates.length)];
-    return ReviewQuestion(entry: entry, direction: direction);
+    return ReviewQuestion(entry: entry, mode: mode);
   }
 
-  static ReviewAnswerResult evaluate({
-    required ReviewQuestion question,
-    required String answer,
-    bool markedUnfamiliar = false,
-  }) {
-    final isCorrect = normalize(answer) == normalize(question.expectedAnswer);
-    return ReviewAnswerResult(
-      isCorrect: isCorrect,
-      wasMarkedUnfamiliar: markedUnfamiliar,
-    );
-  }
-
-  static WordReviewState applyResult({
-    required WordReviewState state,
-    required ReviewAnswerResult result,
-    required DateTime completedAt,
-  }) {
-    return state.copyWith(
-      mustReviewNext: !result.isCorrect || result.wasMarkedUnfamiliar,
-      timesTested: state.timesTested + 1,
-      timesMarkedUnfamiliar: state.timesMarkedUnfamiliar +
-          (result.wasMarkedUnfamiliar ? 1 : 0),
-      lastTestedAt: completedAt,
-      updatedAt: completedAt,
-    );
-  }
-
-  static ReviewSessionSummary summarize(
-    Iterable<ReviewAnswerResult> results,
-  ) {
-    final values = results.toList(growable: false);
-    final correct = values.where((result) => result.isCorrect).length;
-    final unfamiliar = values.where((result) => result.wasMarkedUnfamiliar).length;
-    return ReviewSessionSummary(
-      total: values.length,
-      correct: correct,
-      incorrect: values.length - correct,
-      unfamiliar: unfamiliar,
-    );
-  }
-
-  static String normalize(String value) {
-    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  static ReviewRevealState start(ReviewQuestion question) {
+    return ReviewRevealState(question: question);
   }
 }
