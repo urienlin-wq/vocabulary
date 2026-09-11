@@ -1,50 +1,20 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../../models/word_entry.dart';
 
 class VocabularyReviewPage extends StatefulWidget {
-  const VocabularyReviewPage({super.key, required this.words, this.count = 10});
-  final List<Map<String, String>> words;
+  const VocabularyReviewPage({super.key, required this.words, required this.count});
+  final List<WordEntry> words;
   final int count;
-  @override
-  State<VocabularyReviewPage> createState() => _VocabularyReviewPageState();
+  @override State<VocabularyReviewPage> createState()=>_VocabularyReviewPageState();
 }
-
 class _VocabularyReviewPageState extends State<VocabularyReviewPage> {
-  late final List<Map<String, String>> _items;
-  int _index = 0, _hint = 0;
-  bool _showAnswer = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _items = [...widget.words]..shuffle(Random());
-    _items.removeRange(min(widget.count, _items.length), _items.length);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_items.isEmpty) return const Scaffold(body: Center(child: Text('没有可测试的单词')));
-    final word = _items[_index];
-    final englishFirst = _index.isEven;
-    final prompt = englishFirst ? word['english']! : word['chinese']!;
-    final answer = englishFirst ? word['chinese']! : word['english']!;
-    final visible = englishFirst || _showAnswer ? answer : answer.substring(0, min(_hint, answer.length));
-    return Scaffold(
-      appBar: AppBar(leading: IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context))),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text('${_index + 1}/${_items.length}', textAlign: TextAlign.right),
-          const Spacer(),
-          Text(prompt, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 24),
-          Text(visible, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
-          const Spacer(),
-          if (!englishFirst && !_showAnswer) OutlinedButton(onPressed: () => setState(() => _hint = min(_hint + 1, answer.length)), child: const Text('提示')),
-          OutlinedButton(onPressed: () => setState(() => _showAnswer = true), child: const Text('显示答案')),
-          FilledButton(onPressed: _index + 1 == _items.length ? () => Navigator.pop(context) : () => setState(() { _index++; _hint = 0; _showAnswer = false; }), child: Text(_index + 1 == _items.length ? '完成' : '下一题')),
-        ]),
-      ),
-    );
+  late final List<WordEntry> items;
+  int i=0,hint=0; bool answer=false;
+  @override void initState(){super.initState();items=[...widget.words]..shuffle(Random());items=items.take(widget.count).toList();}
+  @override Widget build(BuildContext c){
+    final w=items[i], en=i.isEven, q=en?w.english:w.chinese, a=en?w.chinese:w.english;
+    final shown=en||answer?a:a.substring(0,min(hint,a.length));
+    return Scaffold(appBar:AppBar(leading:IconButton(icon:const Icon(Icons.close),onPressed:()=>Navigator.pop(c))),body:Padding(padding:const EdgeInsets.all(24),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[Text('${i+1}/${items.length}',textAlign:TextAlign.right),const Spacer(),Text(q,textAlign:TextAlign.center,style:Theme.of(c).textTheme.headlineMedium),const SizedBox(height:24),Text(shown,textAlign:TextAlign.center,style:Theme.of(c).textTheme.headlineSmall),const Spacer(),if(!en&&!answer)OutlinedButton(onPressed:()=>setState(()=>hint=min(hint+1,a.length)),child:const Text('提示')),OutlinedButton(onPressed:()=>setState(()=>answer=true),child:const Text('显示答案')),FilledButton(onPressed:()=>i+1==items.length?Navigator.pop(c):setState((){i++;hint=0;answer=false;}),child:Text(i+1==items.length?'完成':'下一题'))])));
   }
 }
