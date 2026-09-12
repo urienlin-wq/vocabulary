@@ -680,7 +680,7 @@ class _ScanResultPageState extends State<ScanResultPage> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
-            color: Colors.indigo.withOpacity(0.08),
+            color: Colors.indigo.withValues(alpha: 0.08),
             child: Text(
               '识别到 $wordCount 个单词、$phraseCount 个短语。'
               '绿色为已验证，橙色为有拼写建议。',
@@ -721,7 +721,7 @@ class _ScanResultPageState extends State<ScanResultPage> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: _statusColor(item).withOpacity(0.12),
+                          color: _statusColor(item).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
