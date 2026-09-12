@@ -1,5 +1,5 @@
 class WordEntry {
-  const WordEntry({
+  WordEntry({
     this.id,
     required this.english,
     required this.chinese,
