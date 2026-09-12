@@ -66,7 +66,7 @@ class _VocabularyLibraryPageState extends State<VocabularyLibraryPage> {
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
         child: DropdownButtonFormField<String>(
-          value: _controller.selectedLibraryId,
+          initialValue: _controller.selectedLibraryId,
           isExpanded: true,
           decoration: const InputDecoration(labelText: '当前词库', border: OutlineInputBorder()),
           items: _controller.libraries.map((library) => DropdownMenuItem(value: library.id, child: Text(library.name))).toList(growable: false),
